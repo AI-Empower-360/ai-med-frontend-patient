@@ -1,51 +1,70 @@
 /**
- * API Client for Doctor Dashboard
- * Handles all REST API calls with automatic authentication
+ * API Client for Patient Portal (read-only)
+ * Handles REST API calls with in-memory authentication (no localStorage)
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+
+const DEMO_MODE =
+  process.env.NEXT_PUBLIC_DEMO_MODE === "1" ||
+  process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 // In-memory token storage (HIPAA compliant - no localStorage)
 let authToken: string | null = null;
 let authTokenListeners: Set<(token: string | null) => void> = new Set();
 
-export interface LoginRequest {
+export interface PatientLoginRequest {
   email: string;
-  password: string;
+  accessCode: string;
 }
 
-export interface LoginResponse {
+export interface PatientLoginResponse {
   token: string;
-  doctor: {
+  patient: {
     id: string;
     name: string;
     email: string;
   };
 }
 
-export interface SOAPNotes {
-  subjective?: string;
-  objective?: string;
-  assessment?: string;
-  plan?: string;
-}
-
-export interface SOAPNotesResponse {
-  sessionId: string;
-  soap: SOAPNotes;
-  updatedAt: string;
-}
-
-export interface Alert {
+export interface LabResult {
   id: string;
-  severity: "info" | "warning" | "critical";
-  message: string;
-  timestamp: string;
-  acknowledged: boolean;
+  testName: string;
+  date: string; // ISO
+  value: string;
+  unit: string;
+  referenceRange: string;
+  flag?: "low" | "high";
 }
 
-export interface AlertsResponse {
-  alerts: Alert[];
+export interface Medication {
+  id: string;
+  name: string;
+  dose: string;
+  frequency: string;
+  status: "active" | "inactive";
+  prescriber?: string;
+  startDate?: string; // ISO
+  endDate?: string; // ISO
+}
+
+export interface Appointment {
+  id: string;
+  type: string;
+  start: string; // ISO
+  location: string;
+  provider?: string;
+  status: "scheduled" | "completed" | "cancelled";
+  notes?: string;
+}
+
+export interface VisitSummary {
+  id: string;
+  title: string;
+  date: string; // ISO
+  summary: string;
+  followUps?: string[];
 }
 
 /**
@@ -117,6 +136,15 @@ async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
+  if (DEMO_MODE) {
+    // Demo mode never calls a backend. We intentionally keep this behavior
+    // in the client so docs/demo flows work without infrastructure.
+    throw new ApiError(
+      "Demo mode is enabled. This endpoint is not available.",
+      0
+    );
+  }
+
   const url = `${API_BASE_URL}${endpoint}`;
 
   const headers = new Headers(options.headers);
@@ -169,17 +197,33 @@ async function apiRequest<T>(
  */
 export const authApi = {
   /**
-   * Login with email and password
+   * Patient login (read-only portal)
    */
-  async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const response = await apiRequest<LoginResponse>("/auth/login", {
-      method: "POST",
-      body: JSON.stringify(credentials),
-    });
-    
-    // Store token in memory
+  async loginPatient(
+    credentials: PatientLoginRequest
+  ): Promise<PatientLoginResponse> {
+    if (DEMO_MODE) {
+      const response: PatientLoginResponse = {
+        token: "demo-token",
+        patient: {
+          id: "demo-patient",
+          name: "Demo Patient",
+          email: credentials.email,
+        },
+      };
+      setAuthToken(response.token);
+      return response;
+    }
+
+    const response = await apiRequest<PatientLoginResponse>(
+      "/auth/patient/login",
+      {
+        method: "POST",
+        body: JSON.stringify(credentials),
+      }
+    );
+
     setAuthToken(response.token);
-    
     return response;
   },
 
@@ -192,50 +236,110 @@ export const authApi = {
 };
 
 /**
- * Notes API
+ * Patient portal read-only API
  */
-export const notesApi = {
-  /**
-   * Get SOAP notes for a session
-   */
-  async getNotes(sessionId: string): Promise<SOAPNotesResponse> {
-    return apiRequest<SOAPNotesResponse>(`/api/notes/${sessionId}`);
+export const patientApi = {
+  async getLabs(): Promise<LabResult[]> {
+    if (DEMO_MODE) return mockLabs;
+    return apiRequest<LabResult[]>("/api/patient/labs");
   },
-
-  /**
-   * Update SOAP notes for a session
-   */
-  async updateNotes(
-    sessionId: string,
-    soap: Partial<SOAPNotes>
-  ): Promise<SOAPNotesResponse> {
-    return apiRequest<SOAPNotesResponse>(`/api/notes/${sessionId}`, {
-      method: "PATCH",
-      body: JSON.stringify({ soap }),
-    });
+  async getMedications(): Promise<Medication[]> {
+    if (DEMO_MODE) return mockMeds;
+    return apiRequest<Medication[]>("/api/patient/medications");
+  },
+  async getAppointments(): Promise<Appointment[]> {
+    if (DEMO_MODE) return mockAppointments;
+    return apiRequest<Appointment[]>("/api/patient/appointments");
+  },
+  async getSummaries(): Promise<VisitSummary[]> {
+    if (DEMO_MODE) return mockSummaries;
+    return apiRequest<VisitSummary[]>("/api/patient/summaries");
   },
 };
 
-/**
- * Alerts API
- */
-export const alertsApi = {
-  /**
-   * Get all alerts
-   */
-  async getAlerts(): Promise<AlertsResponse> {
-    return apiRequest<AlertsResponse>("/api/alerts");
+// Demo data (non-identifying sample content)
+const mockLabs: LabResult[] = [
+  {
+    id: "lab-1",
+    testName: "Hemoglobin A1c",
+    date: new Date(Date.now() - 14 * 86400000).toISOString(),
+    value: "5.6",
+    unit: "%",
+    referenceRange: "4.0–5.6",
   },
+  {
+    id: "lab-2",
+    testName: "LDL Cholesterol",
+    date: new Date(Date.now() - 30 * 86400000).toISOString(),
+    value: "132",
+    unit: "mg/dL",
+    referenceRange: "< 100",
+    flag: "high",
+  },
+  {
+    id: "lab-3",
+    testName: "TSH",
+    date: new Date(Date.now() - 45 * 86400000).toISOString(),
+    value: "2.1",
+    unit: "mIU/L",
+    referenceRange: "0.4–4.0",
+  },
+];
 
-  /**
-   * Acknowledge an alert
-   */
-  async acknowledgeAlert(alertId: string): Promise<{ success: boolean }> {
-    return apiRequest<{ success: boolean }>(
-      `/api/alerts/${alertId}/acknowledge`,
-      {
-        method: "POST",
-      }
-    );
+const mockMeds: Medication[] = [
+  {
+    id: "med-1",
+    name: "Atorvastatin",
+    dose: "20 mg",
+    frequency: "Once daily",
+    status: "active",
+    prescriber: "Dr. Smith",
+    startDate: new Date(Date.now() - 120 * 86400000).toISOString(),
   },
-};
+  {
+    id: "med-2",
+    name: "Metformin",
+    dose: "500 mg",
+    frequency: "Twice daily",
+    status: "inactive",
+    prescriber: "Dr. Patel",
+    startDate: new Date(Date.now() - 500 * 86400000).toISOString(),
+    endDate: new Date(Date.now() - 200 * 86400000).toISOString(),
+  },
+];
+
+const mockAppointments: Appointment[] = [
+  {
+    id: "appt-1",
+    type: "Primary care follow-up",
+    start: new Date(Date.now() + 7 * 86400000).toISOString(),
+    location: "Clinic A",
+    provider: "Dr. Smith",
+    status: "scheduled",
+  },
+  {
+    id: "appt-2",
+    type: "Lab draw",
+    start: new Date(Date.now() - 20 * 86400000).toISOString(),
+    location: "Lab B",
+    status: "completed",
+  },
+];
+
+const mockSummaries: VisitSummary[] = [
+  {
+    id: "sum-1",
+    title: "Annual physical",
+    date: new Date(Date.now() - 60 * 86400000).toISOString(),
+    summary:
+      "Reviewed preventive screenings and discussed lifestyle. Continued current medications. Plan for repeat labs in 3 months.",
+    followUps: ["Repeat lipid panel in 3 months", "Schedule annual flu shot"],
+  },
+  {
+    id: "sum-2",
+    title: "Follow-up visit",
+    date: new Date(Date.now() - 20 * 86400000).toISOString(),
+    summary:
+      "Discussed blood pressure readings at home and adjusted diet plan. No medication changes at this time.",
+  },
+];

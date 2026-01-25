@@ -1,51 +1,47 @@
-# AI Med Frontend - Doctor Dashboard
+# AI Med Frontend - Patient Portal (Read-only)
 
-A Next.js 14 frontend application for the AI Agentic Internal Medicine platform, providing doctors with a real-time dashboard for patient consultations, live transcription, SOAP notes, and clinical alerts.
+A Next.js 14 frontend application for the AI Med platform, providing patients a **read-only portal** for viewing labs, medications, appointments, and visit summaries.
 
 ## 🎯 Project Purpose
 
-The Doctor Dashboard enables healthcare providers to:
-- Conduct patient consultations with live audio recording
-- Receive real-time transcription of conversations
-- Generate and edit SOAP (Subjective, Objective, Assessment, Plan) notes
-- Receive and manage clinical alerts
-- Maintain HIPAA-compliant workflows
+The Patient Portal enables patients to:
+- View lab results
+- View medications
+- View appointments
+- View visit summaries
+
+No clinical data is editable from this application.
 
 ## 🛠 Tech Stack
 
 - **Framework:** Next.js 14 (App Router)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS
-- **Real-time:** WebSockets
-- **Audio:** Web Audio API
 - **State Management:** React Hooks
 
 ## 📁 Folder Structure
 
 ```
-ai-med-frontend/
+ai-med-frontend-patient/
 ├── app/                    # Next.js App Router
-│   ├── dashboard/         # Dashboard pages and layout
-│   │   ├── layout.tsx     # Dashboard layout with header
-│   │   └── page.tsx       # Main dashboard container
+│   ├── portal/            # Patient portal pages and layout (read-only)
+│   │   ├── layout.tsx     # Portal layout with navigation
+│   │   ├── page.tsx       # Overview page
+│   │   ├── labs/          # Labs
+│   │   ├── medications/   # Medications
+│   │   ├── appointments/  # Appointments
+│   │   └── summaries/     # Summaries
 │   ├── login/             # Authentication
-│   │   └── page.tsx       # Doctor login page
+│   │   └── page.tsx       # Patient login page
 │   ├── globals.css        # Global styles
 │   ├── layout.tsx         # Root layout
 │   └── page.tsx           # Home page (redirects to login)
-├── components/            # React components
-│   ├── alerts-panel.tsx   # Clinical alerts display
-│   ├── notes-panel.tsx    # SOAP notes editor
-│   ├── recording-controls.tsx  # Audio recording UI
-│   └── transcription-panel.tsx # Live transcription display
 ├── lib/                   # Core libraries
-│   ├── api-client.ts      # REST API client
-│   └── websocket.ts       # WebSocket client
+│   └── api-client.ts      # REST API client + demo data
 ├── shared/                # Shared code
 │   ├── hooks/             # Custom React hooks
-│   │   ├── useAuth.ts     # Authentication hook
-│   │   ├── useAudioRecorder.ts  # Audio recording hook
-│   │   └── useWebSocket.ts      # WebSocket hook
+│   │   ├── usePatientAuth.ts    # Patient auth hook
+│   │   └── useAuth.ts           # Backwards-compatible alias
 │   └── ui/                # Reusable UI components
 │       ├── badge.tsx
 │       ├── button.tsx
@@ -64,15 +60,14 @@ ai-med-frontend/
 ### Prerequisites
 
 - Node.js 18+ and npm/yarn/pnpm
-- Backend API running (see `ai-med-backend` repository)
-- Microphone access for recording features
+- Backend API running (optional; demo mode works without backend)
 
 ### Installation
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/AI-Empower-360/ai-med-frontend.git
-   cd ai-med-frontend
+   git clone https://github.com/AI-Empower-360/ai-med-frontend-patient.git
+   cd ai-med-frontend-patient
    ```
 
 2. **Install dependencies:**
@@ -92,7 +87,7 @@ ai-med-frontend/
    Edit `.env.local` with your configuration:
    ```env
    NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
-   NEXT_PUBLIC_WS_BASE_URL=ws://localhost:3001
+   NEXT_PUBLIC_DEMO_MODE=true
    ```
 
 4. **Run the development server:**
@@ -126,12 +121,13 @@ NEXT_PUBLIC_WS_BASE_URL=wss://api.aimed.example.com
 
 ### Backend Requirements
 
-The frontend expects the following backend endpoints:
+The frontend expects the following backend endpoints (read-only):
 
-- **Authentication:** `POST /auth/login`
-- **SOAP Notes:** `GET /api/notes/:sessionId`, `PATCH /api/notes/:sessionId`
-- **Alerts:** `GET /api/alerts`, `POST /api/alerts/:alertId/acknowledge`
-- **WebSocket:** `wss://api.example.com/ws/transcription?token={JWT}`
+- **Authentication:** `POST /auth/patient/login`
+- **Labs:** `GET /api/patient/labs`
+- **Medications:** `GET /api/patient/medications`
+- **Appointments:** `GET /api/patient/appointments`
+- **Summaries:** `GET /api/patient/summaries`
 
 See `API_CONTRACTS.md` for detailed API schemas and WebSocket event formats.
 
@@ -150,35 +146,16 @@ See `HIPAA_COMPLIANCE.md` for detailed compliance documentation.
 ## 🎨 Features
 
 ### Authentication
-- Doctor login with email/password
+- Patient login with email + access code
 - JWT token-based authentication
 - Automatic session management
 - Secure logout with data cleanup
 
-### Live Transcription
-- Real-time audio transcription
-- Speaker identification
-- Partial and final transcript display
-- Auto-scrolling transcript panel
-
-### SOAP Notes
-- Structured note-taking (Subjective, Objective, Assessment, Plan)
-- Live updates from AI analysis
-- Manual editing capabilities
-- Auto-save functionality
-
-### Clinical Alerts
-- Real-time alert notifications
-- Severity levels (info, warning, critical)
-- Alert acknowledgment workflow
-- Visual hierarchy
-
-### Audio Recording
-- Web Audio API integration
-- Real-time audio streaming to backend
-- Mute/unmute functionality
-- Pause/resume recording
-- Microphone permission handling
+### Read-only portal
+- Labs
+- Medications
+- Appointments
+- Visit summaries
 
 ## 🧪 Development
 
@@ -247,7 +224,6 @@ See `LICENSE` file for details.
 ## 🔗 Related Repositories
 
 - **Backend:** [ai-med-backend](https://github.com/AI-Empower-360/ai-med-backend)
-- **Agents:** [ai-med-agents](https://github.com/AI-Empower-360/ai-med-agents)
 - **Infrastructure:** [ai-med-infrastructure](https://github.com/AI-Empower-360/ai-med-infrastructure)
 
 ## 📞 Support

@@ -2,16 +2,16 @@
 
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/shared/hooks/useAuth";
+import { usePatientAuth } from "@/shared/hooks/usePatientAuth";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { ApiError } from "@/lib/api-client";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading: authLoading } = useAuth();
+  const { login, isLoading: authLoading } = usePatientAuth();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [accessCode, setAccessCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,13 +24,13 @@ export default function LoginPage() {
       // Use FormData so browser autofill/paste is respected (React state can lag)
       const formData = new FormData(e.currentTarget);
       const emailValue = String(formData.get("email") || "").trim();
-      const passwordValue = String(formData.get("password") || "");
+      const accessCodeValue = String(formData.get("accessCode") || "");
 
-      await login({ email: emailValue, password: passwordValue });
-      router.push("/dashboard");
+      await login({ email: emailValue, accessCode: accessCodeValue });
+      router.push("/portal");
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message || "Invalid email or password");
+        setError(err.message || "Invalid email or access code");
       } else {
         setError("An unexpected error occurred. Please try again.");
       }
@@ -48,9 +48,9 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <div className="space-y-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Doctor Login</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Patient Portal</h1>
             <p className="mt-2 text-sm text-gray-600">
-              Sign in to access the AI Med Dashboard
+              Sign in to view your labs, medications, appointments, and summaries.
             </p>
           </div>
 
@@ -83,17 +83,17 @@ export default function LoginPage() {
 
             <div>
               <label
-                htmlFor="password"
+                htmlFor="accessCode"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Password
+                Access code
               </label>
               <input
-                id="password"
-                name="password"
+                id="accessCode"
+                name="accessCode"
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={accessCode}
+                onChange={(e) => setAccessCode(e.target.value)}
                 required
                 disabled={isLoading || authLoading}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"

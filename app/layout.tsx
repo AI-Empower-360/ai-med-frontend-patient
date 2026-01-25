@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AI Med - Doctor Dashboard",
-  description: "AI Agentic Internal Medicine Platform - Doctor Dashboard",
+  title: "AI Med - Patient Portal",
+  description: "AI Med Patient Portal (read-only)",
 };
 
 export default function RootLayout({
