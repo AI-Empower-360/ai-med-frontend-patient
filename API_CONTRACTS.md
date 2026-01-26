@@ -4,7 +4,7 @@
 
 ### Authentication
 
-#### POST /auth/login
+#### POST /auth/login (Doctor)
 **Request:**
 ```typescript
 {
@@ -31,6 +31,94 @@
   error: string;
   message: string;
 }
+```
+
+#### POST /auth/patient/login (Patient Portal)
+**Request:**
+```typescript
+{
+  email: string;
+  accessCode: string; // 4+ characters
+}
+```
+
+**Response (200):**
+```typescript
+{
+  token: string; // JWT with role: 'patient'
+  patient: {
+    id: string;
+    name: string;
+    email: string;
+  }
+}
+```
+
+**Error (401):**
+```typescript
+{
+  error: string;
+  message: string;
+}
+```
+
+### Patient Portal (Read-Only)
+
+All patient endpoints require authentication via `Authorization: Bearer {token}` header with a patient JWT token.
+
+#### GET /api/patient/labs
+**Response (200):**
+```typescript
+Array<{
+  id: string;
+  testName: string;
+  date: string; // ISO 8601
+  value: string;
+  unit: string;
+  referenceRange: string;
+  flag?: 'low' | 'high';
+}>
+```
+
+#### GET /api/patient/medications
+**Response (200):**
+```typescript
+Array<{
+  id: string;
+  name: string;
+  dose: string;
+  frequency: string;
+  status: 'active' | 'inactive';
+  prescriber?: string;
+  startDate?: string; // ISO 8601
+  endDate?: string; // ISO 8601
+}>
+```
+
+#### GET /api/patient/appointments
+**Response (200):**
+```typescript
+Array<{
+  id: string;
+  type: string;
+  start: string; // ISO 8601
+  location: string;
+  provider?: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  notes?: string;
+}>
+```
+
+#### GET /api/patient/summaries
+**Response (200):**
+```typescript
+Array<{
+  id: string;
+  title: string;
+  date: string; // ISO 8601
+  summary: string;
+  followUps?: string[];
+}>
 ```
 
 ### SOAP Notes

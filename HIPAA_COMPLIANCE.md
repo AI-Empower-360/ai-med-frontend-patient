@@ -1,7 +1,7 @@
 # HIPAA Compliance Audit
 
 ## Overview
-This document outlines HIPAA compliance measures implemented in the Doctor Dashboard frontend.
+This document outlines HIPAA compliance measures implemented in the Patient Portal frontend (read-only).
 
 ## Key Principles
 
@@ -14,8 +14,9 @@ This document outlines HIPAA compliance measures implemented in the Doctor Dashb
 
 **Implementation Details:**
 - `lib/api-client.ts`: Token stored in module-level variable (memory only)
-- `shared/hooks/useAuth.ts`: No localStorage usage
-- `app/dashboard/page.tsx`: State cleared on component unmount
+- `shared/hooks/usePatientAuth.ts`: No localStorage usage
+- `shared/hooks/useAuth.ts`: Backwards-compatible alias (no localStorage)
+- `app/portal/*`: State cleared on component unmount
 
 ### 2. Secure Authentication
 ✅ **Implemented:**
@@ -26,8 +27,8 @@ This document outlines HIPAA compliance measures implemented in the Doctor Dashb
 
 **Implementation Details:**
 - `lib/api-client.ts`: `setAuthToken()`, `clearAuthToken()` functions
-- `app/login/page.tsx`: Secure form submission
-- `app/dashboard/layout.tsx`: Automatic redirect on auth failure
+- `app/login/page.tsx`: Secure form submission (email + access code)
+- `app/portal/layout.tsx`: Automatic redirect on auth failure
 
 ### 3. Data Transmission Security
 ✅ **Implemented:**
@@ -49,9 +50,9 @@ This document outlines HIPAA compliance measures implemented in the Doctor Dashb
 - Audio stream cleanup on unmount
 
 **Implementation Details:**
-- `shared/hooks/useAuth.ts`: `logout()` clears all state
-- `shared/hooks/useWebSocket.ts`: Cleanup on unmount
-- `shared/hooks/useAudioRecorder.ts`: Media stream cleanup
+- `shared/hooks/usePatientAuth.ts`: `logout()` clears all state
+- `shared/hooks/useAuth.ts`: Backwards-compatible alias
+- Patient portal is read-only (no WebSocket or audio recording)
 
 ### 5. Error Handling
 ✅ **Implemented:**
@@ -73,7 +74,8 @@ This document outlines HIPAA compliance measures implemented in the Doctor Dashb
 
 **Implementation Details:**
 - All hooks include cleanup in `useEffect` return functions
-- `app/dashboard/page.tsx`: State management with proper cleanup
+- `app/portal/*`: State management with proper cleanup
+- Read-only data fetching with proper cancellation
 
 ## Compliance Checklist
 
@@ -86,8 +88,8 @@ This document outlines HIPAA compliance measures implemented in the Doctor Dashb
 - [x] No PHI in error messages
 - [x] No PHI in console logs (production)
 - [x] Proper component cleanup
-- [x] WebSocket security
-- [x] Audio stream security
+- [x] Read-only access enforcement (no edit capabilities)
+- [x] Patient data isolation (patients can only see their own data)
 
 ## Recommendations for Production
 
