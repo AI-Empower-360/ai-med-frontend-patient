@@ -202,12 +202,12 @@ The dashboard is designed desktop-first with responsive breakpoints:
 
 ## 🚧 Future Enhancements
 
-- [ ] Patient portal integration
 - [ ] Mobile app support
-- [ ] Offline mode
-- [ ] Advanced note templates
-- [ ] Voice commands
+- [ ] Offline mode with service workers
+- [ ] PDF export for lab results and summaries
+- [ ] Email notifications for new lab results
 - [ ] Multi-language support
+- [ ] Accessibility improvements (WCAG 2.1 AA)
 
 ## 🤝 Contributing
 
