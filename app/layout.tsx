@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { EnvValidator } from "@/components/env-validator";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 export const metadata: Metadata = {
   title: "AI Med - Patient Portal",
@@ -13,7 +15,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ErrorBoundary>
+          <EnvValidator />
+          {children}
+        </ErrorBoundary>
+      </body>
     </html>
   );
 }

@@ -29,8 +29,17 @@ export default function LoginPage() {
       await login({ email: emailValue, accessCode: accessCodeValue });
       router.push("/portal");
     } catch (err) {
+      // Improved error handling with user-friendly messages
       if (err instanceof ApiError) {
-        setError(err.message || "Invalid email or access code");
+        // Use sanitized error message
+        const errorMessage = err.message || "Invalid email or access code";
+        setError(errorMessage);
+      } else if (err instanceof Error) {
+        // Handle other errors gracefully
+        setError("An unexpected error occurred. Please try again.");
+        if (process.env.NODE_ENV === "development") {
+          console.error("Login error:", err);
+        }
       } else {
         setError("An unexpected error occurred. Please try again.");
       }

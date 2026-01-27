@@ -40,7 +40,17 @@ export default function PortalOverviewPage() {
         setSummaries(sumsRes);
       } catch (e) {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : "Failed to load portal data.");
+        // Use improved error handling
+        const errorMessage =
+          e instanceof Error
+            ? e.message
+            : "Failed to load portal data. Please try again.";
+        setError(errorMessage);
+        
+        // Log error for debugging (development only)
+        if (process.env.NODE_ENV === "development") {
+          console.error("Error loading portal data:", e);
+        }
       }
     }
     load();

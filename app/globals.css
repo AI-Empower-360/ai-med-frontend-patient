@@ -25,3 +25,90 @@ body {
     text-wrap: balance;
   }
 }
+
+/* Print Styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  .print-content,
+  .print-content * {
+    visibility: visible;
+  }
+  
+  .print-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  
+  .no-print,
+  .no-print * {
+    display: none !important;
+  }
+  
+  @page {
+    margin: 1cm;
+    size: letter;
+  }
+  
+  .print-content {
+    page-break-inside: avoid;
+  }
+  
+  table {
+    page-break-inside: auto;
+  }
+  
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  
+  thead {
+    display: table-header-group;
+  }
+  
+  tfoot {
+    display: table-footer-group;
+  }
+}
+
+/* Mobile Responsiveness Improvements */
+@media (max-width: 640px) {
+  /* Improve table scrolling on mobile */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Better spacing on mobile */
+  .space-y-4 > * + * {
+    margin-top: 1rem;
+  }
+  
+  /* Stack buttons vertically on mobile */
+  .flex.flex-wrap {
+    flex-direction: column;
+  }
+  
+  /* Better card padding on mobile */
+  .p-4,
+  .p-5,
+  .p-6 {
+    padding: 1rem;
+  }
+  
+  /* Improve text readability on mobile */
+  .text-sm {
+    font-size: 0.875rem;
+    line-height: 1.5rem;
+  }
+  
+  /* Better input sizing on mobile */
+  input,
+  select {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
