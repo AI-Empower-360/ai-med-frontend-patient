@@ -3,12 +3,12 @@
  * Handles REST API calls with in-memory authentication (no localStorage)
  */
 
-import { getSafeEnvConfig } from "./env-validation";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
-// Get validated environment configuration
-const envConfig = getSafeEnvConfig();
-const API_BASE_URL = envConfig.apiBaseUrl;
-const DEMO_MODE = envConfig.demoMode;
+const DEMO_MODE =
+  process.env.NEXT_PUBLIC_DEMO_MODE === "1" ||
+  process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 // In-memory token storage (HIPAA compliant - no localStorage)
 let authToken: string | null = null;
@@ -158,35 +158,10 @@ async function apiRequest<T>(
     headers.set("Authorization", `Bearer ${authToken}`);
   }
 
-  let response: Response;
-  
-  try {
-    response = await fetch(url, {
-      ...options,
-      headers,
-      signal: AbortSignal.timeout(30000), // 30 second timeout
-    });
-  } catch (error) {
-    // Handle network errors
-    if (error instanceof TypeError && error.message.includes("fetch")) {
-      throw new ApiError(
-        "Unable to connect to the server. Please check your internet connection.",
-        0,
-        "NETWORK_ERROR"
-      );
-    }
-    
-    // Handle timeout
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new ApiError(
-        "Request timed out. Please try again.",
-        0,
-        "TIMEOUT"
-      );
-    }
-    
-    throw error;
-  }
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
 
   if (!response.ok) {
     let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
@@ -194,7 +169,6 @@ async function apiRequest<T>(
 
     try {
       const errorData = await response.json();
-      // Sanitize error message to prevent PHI exposure
       errorMessage = errorData.message || errorData.error || errorMessage;
       errorCode = errorData.code;
     } catch {
@@ -206,19 +180,7 @@ async function apiRequest<T>(
       clearAuthToken();
     }
 
-    // Create error with sanitized message
-    const error = new ApiError(errorMessage, response.status, errorCode);
-    
-    // Log error for debugging (in development only)
-    if (process.env.NODE_ENV === "development") {
-      console.error(`API Error [${response.status}]:`, {
-        endpoint,
-        status: response.status,
-        code: errorCode,
-      });
-    }
-
-    throw error;
+    throw new ApiError(errorMessage, response.status, errorCode);
   }
 
   // Handle empty responses

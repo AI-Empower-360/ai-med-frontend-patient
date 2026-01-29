@@ -4,19 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/shared/ui/card";
 import { patientApi, type LabResult } from "@/lib/api-client";
 import { Badge } from "@/shared/ui/badge";
-import { DateRangeFilter } from "@/shared/ui/date-range-filter";
-import { exportLabsToPDF, printPage } from "@/lib/pdf-utils";
-import { usePatientAuth } from "@/shared/hooks/usePatientAuth";
 
 export default function LabsPage() {
   const [labs, setLabs] = useState<LabResult[] | null>(null);
   const [query, setQuery] = useState("");
-  const [dateRange, setDateRange] = useState<{ start: string | null; end: string | null }>({
-    start: null,
-    end: null,
-  });
   const [error, setError] = useState<string | null>(null);
-  const { patient } = usePatientAuth();
 
   useEffect(() => {
     let cancelled = false;
@@ -28,15 +20,7 @@ export default function LabsPage() {
         setLabs(res);
       } catch (e) {
         if (cancelled) return;
-        // Improved error handling
-        if (e instanceof Error) {
-          setError(e.message || "Failed to load labs. Please try again.");
-        } else {
-          setError("Failed to load labs. Please try again.");
-        }
-        if (process.env.NODE_ENV === "development") {
-          console.error("Error loading labs:", e);
-        }
+        setError(e instanceof Error ? e.message : "Failed to load labs.");
       }
     }
     load();
@@ -46,66 +30,14 @@ export default function LabsPage() {
   }, []);
 
   const filtered = useMemo(() => {
-    let list = labs || [];
-
-    // Filter by search query
-    if (query.trim()) {
-      const q = query.trim().toLowerCase();
-      list = list.filter((l) => l.testName.toLowerCase().includes(q));
-    }
-
-    // Filter by date range
-    if (dateRange.start || dateRange.end) {
-      list = list.filter((l) => {
-        const labDate = new Date(l.date);
-        if (dateRange.start && labDate < new Date(dateRange.start)) return false;
-        if (dateRange.end) {
-          const endDate = new Date(dateRange.end);
-          endDate.setHours(23, 59, 59, 999); // Include entire end date
-          if (labDate > endDate) return false;
-        }
-        return true;
-      });
-    }
-
-    return list;
-  }, [labs, query, dateRange]);
-
-  const handleExportPDF = () => {
-    if (filtered.length > 0) {
-      exportLabsToPDF(filtered, patient?.name);
-    }
-  };
-
-  const handlePrint = () => {
-    printPage("Lab Results");
-  };
+    const q = query.trim().toLowerCase();
+    const list = labs || [];
+    if (!q) return list;
+    return list.filter((l) => l.testName.toLowerCase().includes(q));
+  }, [labs, query]);
 
   return (
-    <Card
-      title="Lab results"
-      className="h-full print-content"
-      headerActions={
-        <div className="flex items-center gap-2 no-print">
-          <button
-            type="button"
-            onClick={handleExportPDF}
-            disabled={!filtered || filtered.length === 0}
-            className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            📄 Export PDF
-          </button>
-          <button
-            type="button"
-            onClick={handlePrint}
-            disabled={!filtered || filtered.length === 0}
-            className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            🖨️ Print
-          </button>
-        </div>
-      }
-    >
+    <Card title="Lab results" className="h-full">
       <div className="space-y-4">
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
@@ -113,29 +45,19 @@ export default function LabsPage() {
           </div>
         )}
 
-        {/* Search and filters */}
-        <div className="flex flex-col sm:flex-row gap-3 no-print">
+        <div className="flex items-center gap-3">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search labs…"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          <DateRangeFilter
-            onDateRangeChange={(start, end) =>
-              setDateRange({ start, end })
-            }
+            className="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
         {labs === null ? (
           <div className="text-sm text-gray-500">Loading…</div>
         ) : filtered.length === 0 ? (
-          <div className="text-sm text-gray-600">
-            {query || dateRange.start || dateRange.end
-              ? "No lab results match your filters."
-              : "No lab results found."}
-          </div>
+          <div className="text-sm text-gray-600">No lab results found.</div>
         ) : (
           <div className="overflow-x-auto border border-gray-200 rounded-xl bg-white">
             <table className="min-w-full text-sm">
